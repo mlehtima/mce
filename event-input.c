@@ -70,6 +70,11 @@
 # define KEY_CAMERA_FOCUS               0x0210
 #endif
 
+#ifndef KEY_CAMERA_SNAPSHOT
+/** Input layer code for the camera snapshot button */
+# define KEY_CAMERA_SNAPSHOT            0x02fe
+#endif
+
 #ifndef FF_STATUS_CNT
 # ifdef FF_STATUS_MAX
 #  define FF_STATUS_CNT (FF_STATUS_MAX+1)
@@ -1168,7 +1173,10 @@ evin_evdevinfo_is_volumekey_default(const evin_evdevinfo_t *self)
                                           ignored_key_codes));
 }
 
-/** Test if input device is exactly like volume key device in Nexus 5
+/** Test if input device is like volume key device in Nexus 5
+ *
+ * In addition to volume keys, the input device also reports
+ * lid sensor state.
  *
  * @param self  evin_evdevinfo_t object
  *
@@ -1189,13 +1197,24 @@ evin_evdevinfo_is_volumekey_hammerhead(const evin_evdevinfo_t *self)
         -1
     };
 
+    static const int ignored_key_codes[] = {
+        /* Getting camera focus blocked/unblocked based on
+         * volume key policy is less harmful than leaving
+         * the volume keys active all the time. */
+        KEY_CAMERA_FOCUS,
+        /* Ugly hack for Fairphone 2 */
+        KEY_CAMERA_SNAPSHOT,
+        -1
+    };
+
     static const int wanted_sw_codes[] = {
         SW_LID, // magnetic lid cover sensor
         -1
     };
 
     return (evin_evdevinfo_match_types(self, wanted_types) &&
-            evin_evdevinfo_match_codes(self, EV_KEY, wanted_key_codes) &&
+            evin_evdevinfo_match_codes_ex(self, EV_KEY, wanted_key_codes,
+                                          ignored_key_codes) &&
             evin_evdevinfo_match_codes(self, EV_SW, wanted_sw_codes));
 }
 
